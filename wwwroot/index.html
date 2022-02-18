@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="js/jquery/dist/jquery.js"></script>
+    <script src="js/microsoft/signalr/dist/browser/signalr.js"></script>
+    <style>
+        #chat_box {
+            height: 300px;
+            border: 1px solid gray;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat_box">
+    </div>
+    <input id="in_box" type="text" />
+    <button id="btn_send">发送</button>
+</body>
+</html>
+
+<script>
+    (function () {
+        let Signalr = {
+            Connection: null,
+
+            SetUpConnection: function () {
+                this.Connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/chat")
+                    .build();
+
+                this.Connection.on("SendMessage", message => {
+                    console.log("message");
+                    addMsg(message.userName, message.sendedTimeStr, message.content, message.clientName);
+
+                });
+
+                this.Connection.on("GetMessages", data => {
+                    console.log(data);
+                    for (var i = 0; i < data.length; i++) {
+                        let message = data[i];
+                        addMsg(message.userName, message.sendedTimeStr, message.content, message.clientName);
+                    }
+                });
+
+                this.Connection.on("Finished", () => {
+                    Connection.stop();
+                    console.log("finished");
+                })
+
+                this.Connection.start()
+                    .catch(err => console.log(err.toString()));
+            },
+
+            init: function () {
+                this.SetUpConnection();
+            }
+        }
+        Signalr.init();
+
+
+        $('#btn_send').on('click', function () {
+            var username = "[Admin]";
+            var content = $('#in_box').val();
+
+            Signalr.Connection.invoke("SendMessage", username, content, "111");
+        });
+
+        function addMsg(username, timer, content, client) {
+            $('#chat_box').append('<div>' + username + ':' + content + ':' + client + '</div>');
+        }
+
+        
+
+    })()
+</script>
